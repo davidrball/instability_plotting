@@ -1,0 +1,96 @@
+import matplotlib
+matplotlib.use('Agg')
+import numpy as np
+import h5py
+import matplotlib.pyplot as plt
+
+plt.rcParams['mathtext.fontset'] = 'stix'
+plt.rcParams['font.family'] = 'STIXGeneral'
+plt.rcParams.update({'font.size': 8})
+plt.set_cmap("Blues")
+
+
+
+
+#define the simulation matrix, right now it's 3x3
+#first index picks out guide field strength, 2nd is temp
+
+
+
+
+#guide field 0, delgam=.00005, .0005, .005
+#myname = "/home/u21/davidrball/david/tristan_acc-mec_Ez/8k_run2/output/flds.tot."
+
+myname = "/home/u21/davidrball/david/tristan_KSI/sig2_bangle50/output/flds.tot."
+
+t0=121
+tf=136
+for t in range(t0, tf):
+    fig, ax0  = plt.subplots(1,1)
+    
+    tstr = "%03d" % t
+    
+    tname =myname+ tstr
+    
+    print(myname)
+
+    #xscan = 50
+    istep = 6
+    c_omp = 5
+
+
+
+           
+    mydens = h5py.File(tname,'r')['dens'][0,:,:]
+    
+    bx = h5py.File(tname,'r')['bx'][0,:,:]
+    by = h5py.File(tname,'r')['by'][0,:,:]
+    bz = h5py.File(tname,'r')['bz'][0,:,:]
+    myshape = np.shape(mydens)
+    
+    xlen = myshape[1]
+    ylen = myshape[0]
+    
+    xscan=ylen/2
+    
+    x0 = 3*int(xlen/4)
+    xlow=int(x0-xscan)
+    xup=int(x0+xscan)
+    mydens = mydens[:,xlow:xup]
+    
+    
+    bx = bx[:,xlow:xup]
+    by = by[:,xlow:xup]
+    bz = bz[:,xlow:xup]
+    
+    b2 = bx**2 + by**2 + bz**2
+    
+    
+    xext = xscan*istep/c_omp
+    yext = ylen*istep/c_omp
+    
+    print(xext,yext)
+    
+    bmax = np.max(b2)
+    
+    myim = ax0.imshow(b2,extent = [-yext/2, yext/2, -xext, xext],origin='lower',vmax=bmax/4.)
+    myshape = np.shape(bx)
+    ylen = myshape[0]
+    xlen = myshape[1]
+    #working version
+    yarr = np.linspace(-xext,xext,ylen)
+    xarr = np.linspace(-yext/2,yext/2,xlen)
+    xarr = np.linspace(-xext,xext,ylen)
+    yarr = np.linspace(-yext/2,yext/2,xlen)
+    xhlf=xlen/2
+    ax0.streamplot(xarr, yarr,bx,by,color="Red",linewidth=0.5,arrowsize=.5,density=[.5,2.5])#,start_points=seed_points.T)#, density=[2,2])
+
+
+    xstr = "$x \; (c/\omega_{p})$"
+    ystr = "$y \; (c/\omega_{p})$"
+    ax0.set_ylabel(ystr)                                        
+    ax0.set_xlabel(xstr)
+    ax0.set_xlim(-yext/2,yext/2)
+    ax0.set_ylim(-xext,xext)
+    plt.savefig('bangle50_sig2/blines'+tstr+'.png',dpi=300,bbox_inches='tight')
+    plt.close()
